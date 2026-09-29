@@ -81,7 +81,7 @@ function speak(text,lang){try{const u=new SpeechSynthesisUtterance(text);u.lang=
 
 /* ---------- Google Drive-sync ---------- */
 // Plak hier je OAuth Client-ID (zie README). Of vul hem in de app in.
-const CLIENT_ID="JOUW_CLIENT_ID.apps.googleusercontent.com";
+const CLIENT_ID="542228351377-grv2vs8i8qf6l0vj30jh83cb1agjm5g2.apps.googleusercontent.com";
 const SCOPE="https://www.googleapis.com/auth/drive.appdata", FILE="woordkaarten.json";
 let tok=null,tokExp=0,syncing=false,timer=null,stat="";
 const ls=(k,v)=>{try{if(v===null)localStorage.removeItem(k);else if(v!==undefined)localStorage.setItem(k,v);return localStorage.getItem(k)}catch(e){return null}};
