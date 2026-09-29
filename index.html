@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Woordkaarten</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2f4bd8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Woordkaarten">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f6fb;--ink:#14213d;--mute:#5b6784;--card:#fff;--line:#d9e0ee;--acc:#2f4bd8;--hi:#ffd447;--ok:#1f9d6b;--no:#d6455a;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1526;--ink:#eef1fa;--mute:#98a3c2;--card:#19213a;--line:#2b3556;--acc:#8da0ff;--hi:#ffd447}}
+:root[data-theme="dark"]{--bg:#0f1526;--ink:#eef1fa;--mute:#98a3c2;--card:#19213a;--line:#2b3556;--acc:#8da0ff;--hi:#ffd447}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Bricolage Grotesque',system-ui,-apple-system,Segoe UI,sans-serif;line-height:1.4}
+main{max-width:640px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:1.9rem;font-weight:800;margin:0 0 4px;letter-spacing:-.02em}
+h2{font-size:1.15rem;margin:0}
+p.sub{color:var(--mute);margin:0 0 20px}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:10px 14px}
+button:hover{border-color:var(--acc)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.card:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+button.primary{background:var(--acc);color:#fff;border-color:var(--acc);font-weight:600}
+button.link{border:0;background:none;color:var(--acc);padding:6px}
+input,select,textarea{width:100%;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.grow{flex:1;min-width:120px}
+.deck{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:10px;cursor:pointer}
+.deck:hover{border-color:var(--acc)}
+.deck .meta{color:var(--mute);font-size:.9rem}
+.badge{background:var(--hi);color:#14213d;border-radius:99px;padding:2px 10px;font-weight:600;font-size:.85rem}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:14px 0}
+.panel label{display:block;font-size:.9rem;color:var(--mute);margin:10px 0 4px}
+.scene{perspective:1200px;margin:18px 0}
+.card{position:relative;height:260px;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.3,.7,.2,1);cursor:pointer;outline-offset:4px;border-radius:20px}
+.card.flip{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:20px;background:var(--card);border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;font-size:2rem;font-weight:600;overflow:auto}
+.face small{position:absolute;top:14px;left:18px;color:var(--mute);font-size:.8rem;font-weight:400}
+.back{transform:rotateY(180deg);background:var(--acc);color:#fff;border-color:var(--acc)}
+.back small{color:#dfe5ff}
+.hint{text-align:center;color:var(--mute);font-size:.9rem;margin:-6px 0 12px}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.actions .no{border-color:var(--no);color:var(--no)}
+.actions .ok{border-color:var(--ok);color:var(--ok)}
+.actions button{padding:14px;font-weight:600}
+.progress{height:6px;background:var(--line);border-radius:9px;overflow:hidden;margin:8px 0}
+.progress i{display:block;height:100%;background:var(--acc);width:0;transition:width .3s}
+.list{margin-top:10px}
+.item{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.item span{flex:1;overflow-wrap:anywhere}
+.item .b{color:var(--mute)}
+.empty{text-align:center;color:var(--mute);padding:28px 8px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.hide{display:none}
+@media(prefers-reduced-motion:reduce){.card{transition:none}}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script>
+const LANGS=[["nl-NL","Nederlands"],["en-GB","Engels"],["fr-FR","Frans"],["de-DE","Duits"],["es-ES","Spaans"],["it-IT","Italiaans"],["pt-PT","Portugees"],["sv-SE","Zweeds"],["ja-JP","Japans"],["zh-CN","Chinees"],["tr-TR","Turks"]];
+const DAY=864e5, GAPS=[0,1,2,4,8,16];
+let S={decks:[]}, view={name:"home"}, study=null;
+try{const r=localStorage.getItem("woordkaarten");if(r)S=JSON.parse(r)}catch(e){}
+function save(){try{localStorage.setItem("woordkaarten",JSON.stringify(S))}catch(e){}}
+const $=s=>document.querySelector(s), app=$("#app");
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const uid=()=>Math.random().toString(36).slice(2,9);
+const langName=c=>(LANGS.find(l=>l[0]===c)||[0,c])[1];
+const dueCards=d=>d.cards.filter(c=>c.due<=Date.now());
+function speak(text,lang){try{const u=new SpeechSynthesisUtterance(text);u.lang=lang;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
+
+function render(){
+  if(view.name==="home")home();
+  else if(view.name==="deck")deckView();
+  else if(view.name==="study")studyView();
+}
+
+function home(){
+  app.innerHTML=`<h1>Woordkaarten</h1><p class="sub">Klik op een kaart om ze om te draaien.</p>
+  <div id="decks">${S.decks.length?S.decks.map(d=>`<div class="deck" tabindex="0" role="button" data-id="${d.id}">
+    <div class="grow"><h2>${esc(d.name)}</h2><div class="meta">${d.cards.length} kaarten · ${langName(d.front)} → ${langName(d.back)}</div></div>
+    ${dueCards(d).length?`<span class="badge">${dueCards(d).length} te doen</span>`:""}</div>`).join(""):`<div class="empty">Nog geen stapels. Maak je eerste stapel hieronder.</div>`}</div>
+  <div class="panel"><h2>Nieuwe stapel</h2>
+  <label for="dn">Naam</label><input id="dn" placeholder="bv. Frans – eten en drinken">
+  <div class="row"><div class="grow"><label for="df">Voorkant (taal)</label><select id="df">${LANGS.map(l=>`<option value="${l[0]}" ${l[0]==="fr-FR"?"selected":""}>${l[1]}</option>`).join("")}</select></div>
+  <div class="grow"><label for="db">Achterkant (taal)</label><select id="db">${LANGS.map(l=>`<option value="${l[0]}" ${l[0]==="nl-NL"?"selected":""}>${l[1]}</option>`).join("")}</select></div></div>
+  <p style="margin:14px 0 0"><button class="primary" id="mk">Stapel maken</button></p></div>
+  <p class="row"><button class="link" id="th">Donker/licht wisselen</button></p>`;
+  document.querySelectorAll(".deck").forEach(e=>{const go=()=>{view={name:"deck",id:e.dataset.id};render()};e.onclick=go;e.onkeydown=k=>{if(k.key==="Enter")go()}});
+  $("#mk").onclick=()=>{const n=$("#dn").value.trim();if(!n){$("#dn").focus();return}
+    S.decks.push({id:uid(),name:n,front:$("#df").value,back:$("#db").value,cards:[]});save();render()};
+  $("#th").onclick=()=>{const r=document.documentElement,dark=getComputedStyle(r).getPropertyValue("--bg").trim()==="#0f1526";r.dataset.theme=dark?"light":"dark"};
+}
+
+const deckOf=()=>S.decks.find(d=>d.id===view.id);
+
+function deckView(){
+  const d=deckOf();if(!d){view={name:"home"};return render()}
+  app.innerHTML=`<div class="top"><button class="link" id="bk">‹ Terug</button><button class="link" id="del">Stapel verwijderen</button></div>
+  <h1>${esc(d.name)}</h1><p class="sub">${d.cards.length} kaarten · ${dueCards(d).length} te herhalen</p>
+  <div class="row"><button class="primary grow" id="st" ${d.cards.length?"":"disabled"}>Oefenen (${dueCards(d).length})</button>
+  <button class="grow" id="sa" ${d.cards.length?"":"disabled"}>Alles oefenen</button></div>
+  <label class="row" style="margin-top:10px;color:var(--mute)"><input type="checkbox" id="rv" style="width:auto" ${d.rev?"checked":""}> Omgekeerd oefenen (${langName(d.back)} → ${langName(d.front)})</label>
+  <div class="panel"><h2>Kaart toevoegen</h2>
+  <label for="cf">Voorkant (${langName(d.front)})</label><input id="cf" autocomplete="off">
+  <label for="cb">Achterkant (${langName(d.back)})</label><input id="cb" autocomplete="off">
+  <p style="margin:14px 0 0"><button class="primary" id="ad">Kaart toevoegen</button></p></div>
+  <div class="panel"><h2>Importeren</h2><p class="sub" style="margin:4px 0 8px">Eén kaart per regel: voorkant;achterkant (of met tab of komma).</p>
+  <textarea id="imp" rows="4" placeholder="la pomme;de appel&#10;le pain;het brood"></textarea>
+  <p class="row" style="margin:10px 0 0"><button id="im">Importeren</button><button id="ex">Kopieer als tekst</button></p></div>
+  <div class="list">${d.cards.map(c=>`<div class="item"><span>${esc(c.f)}</span><span class="b">${esc(c.b)}</span><button class="link" data-x="${c.id}" aria-label="Kaart verwijderen">✕</button></div>`).join("")}</div>`;
+  $("#bk").onclick=()=>{view={name:"home"};render()};
+  $("#del").onclick=()=>{if(confirm("Deze stapel en alle kaarten verwijderen?")){S.decks=S.decks.filter(x=>x!==d);save();view={name:"home"};render()}};
+  $("#rv").onchange=e=>{d.rev=e.target.checked;save()};
+  const add=()=>{const f=$("#cf").value.trim(),b=$("#cb").value.trim();if(!f||!b){(f?$("#cb"):$("#cf")).focus();return}
+    d.cards.push({id:uid(),f,b,box:0,due:0});save();deckView();$("#cf").focus()};
+  $("#ad").onclick=add;$("#cb").onkeydown=e=>{if(e.key==="Enter")add()};
+  $("#im").onclick=()=>{let n=0;$("#imp").value.split("\n").forEach(l=>{const p=l.split(/[;\t,]/).map(x=>x.trim());if(p[0]&&p[1]){d.cards.push({id:uid(),f:p[0],b:p.slice(1).join(", "),box:0,due:0});n++}});
+    if(n){save();deckView()}else alert("Geen geldige regels gevonden. Gebruik voorkant;achterkant.")};
+  $("#ex").onclick=async()=>{const t=d.cards.map(c=>c.f+";"+c.b).join("\n");try{await navigator.clipboard.writeText(t);alert("Gekopieerd.")}catch(e){$("#imp").value=t}};
+  $("#st").onclick=()=>startStudy(d,false);$("#sa").onclick=()=>startStudy(d,true);
+  document.querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>{d.cards=d.cards.filter(c=>c.id!==b.dataset.x);save();deckView()});
+}
+
+function startStudy(d,all){
+  let q=(all?d.cards.slice():dueCards(d)).sort(()=>Math.random()-.5).sort((a,b)=>a.box-b.box);
+  if(!q.length){alert("Niets te herhalen. Kies 'Alles oefenen' om toch te oefenen.");return}
+  study={q,total:q.length,known:0,flip:false};view={name:"study",id:d.id};render();
+}
+
+function studyView(){
+  const d=deckOf();if(!d||!study){view={name:"home"};return render()}
+  if(!study.q.length){
+    app.innerHTML=`<div class="top"><button class="link" id="bk">‹ Terug</button></div><h1>Klaar!</h1>
+    <p class="sub">${study.known} van ${study.total} kaarten wist je.</p><button class="primary" id="ag">Terug naar de stapel</button>`;
+    $("#bk").onclick=$("#ag").onclick=()=>{study=null;view={name:"deck",id:d.id};render()};return}
+  const c=study.q[0],rev=!!d.rev,front=rev?c.b:c.f,back=rev?c.f:c.b,fl=rev?d.back:d.front,bl=rev?d.front:d.back;
+  const done=study.total-study.q.length;
+  app.innerHTML=`<div class="top"><button class="link" id="bk">‹ Stoppen</button><span class="meta" style="color:var(--mute)">${done+1} / ${study.total}</span></div>
+  <div class="progress"><i style="width:${done/study.total*100}%"></i></div>
+  <div class="scene"><div class="card ${study.flip?"flip":""}" id="cd" tabindex="0" role="button" aria-label="Kaart omdraaien">
+    <div class="face"><small>${langName(fl)}</small>${esc(front)}</div>
+    <div class="face back"><small>${langName(bl)}</small>${esc(back)}</div></div></div>
+  <p class="hint">${study.flip?"":"Klik of druk op spatie om om te draaien"}</p>
+  <p class="row" style="justify-content:center;margin:0 0 12px"><button id="sp">🔊 Uitspraak</button></p>
+  <div class="actions ${study.flip?"":"hide"}"><button class="no" id="no">Wist ik niet</button><button class="ok" id="ok">Wist ik wel</button></div>`;
+  $("#bk").onclick=()=>{study=null;view={name:"deck",id:d.id};render()};
+  const flip=()=>{study.flip=!study.flip;$("#cd").classList.toggle("flip",study.flip);document.querySelector(".actions").classList.toggle("hide",!study.flip);document.querySelector(".hint").textContent=study.flip?"":"Klik of druk op spatie om om te draaien";
+    if(study.flip)speak(back,bl)};
+  $("#cd").onclick=flip;$("#cd").onkeydown=e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();flip()}};
+  $("#sp").onclick=()=>speak(study.flip?back:front,study.flip?bl:fl);
+  const answer=ok=>{study.q.shift();
+    if(ok){c.box=Math.min(c.box+1,5);study.known++}else{c.box=0;study.q.splice(Math.min(3,study.q.length),0,c)}
+    c.due=Date.now()+GAPS[c.box]*DAY;study.flip=false;save();render()};
+  $("#ok").onclick=()=>answer(true);$("#no").onclick=()=>answer(false);
+}
+render();
+if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}
+</script>
+</body>
+</html>
